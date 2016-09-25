@@ -25,6 +25,14 @@ public class table_operations {
 	}
     }
     
+    public static int insert_motion_entry(String dev_id, String S, String date) throws Exception {
+	String st = "./Add_Motion.sh " + dbname + " " + dev_id + " " + date + " ";
+	st += S;
+	System.out.println(st);
+	int rv = run_command(st);
+	return rv;
+    }
+
     public static int insert_motion_entry(String dev_id, float[] set, String date) throws Exception {
 	String st = "./Add_Motion.sh " + dbname + " " + dev_id + " " + date;
 	for(int i = 0; i < 9; i++)
