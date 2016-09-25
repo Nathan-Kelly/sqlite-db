@@ -19,10 +19,12 @@ fi
 
 if sqlite3 $DATABASE "PRAGMA foreign_keys = ON; begin; INSERT INTO user VALUES('$USER', (select max(id) from user) + 1); commit;" ; then
     echo "success"
+    sqlite3 $DATABASE "select max(id) from user"
     exit 0
 else
     if sqlite3 $DATABASE "PRAGMA foreign_keys = ON; begin; INSERT INTO user VALUES('$USER', 0); commit;" ; then
 	echo "success"
+	sqlite3 $DATABASE "select max(id) from user"
 	exit 0
     else
 	echo "failure"
