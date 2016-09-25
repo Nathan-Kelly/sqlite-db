@@ -7,20 +7,43 @@ public class table_operations {
     //maybe just use for testing?
 
     static List<String> ls;
-    public static String dbname = "test.db";
+    public static String dbname = "tester2.db";
     public static void main(String[] args) {
 	try {
-	    register_user("job");	    
+	    int k = register_user("lob");	    
+	    if(k == 0) {
+		String user_id = ls.get(ls.size() -1);
+		k = register_device(Integer.parseInt(user_id), "0x" + user_id);
+		if(k == 0) {
+		    insert_motion_entry("0x"+user_id, new float[]{0,0,0,1,2,3,6,5,4}, "1234125");
+		}
+	    }
 	} catch (Exception e) {
 	    System.err.println(e);
 	    System.err.println("invalid");
-	    print_list(ls);
+	    
 	}
     }
     
-
+    public static int insert_motion_entry(String dev_id, float[] set, String date) throws Exception {
+	String st = "./Add_Motion.sh " + dbname + " " + dev_id + " " + date;
+	for(int i = 0; i < 9; i++)
+	    st += " " + set[i];
+	System.out.println(st);
+	int rv = run_command(st);
+	return rv;
+    }
+    
     public static int register_user(String name) throws Exception {
 	String st = "./register_user.sh " + dbname + " " + name;
+	System.out.println(st);
+	int rv = run_command(st);
+	print_list(ls);
+	return rv;
+    }
+
+    public static int register_device(int user, String dev) throws Exception {
+	String st = "./register_device.sh " + dbname + " " + user + " " + dev;
 	System.out.println(st);
 	int rv = run_command(st);
 	print_list(ls);
