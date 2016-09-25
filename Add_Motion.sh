@@ -81,9 +81,9 @@ fi
 
 
 #->entry       (entry_date, real_date, _dev_id*, [seq])
-if sqlite3 $DATABASE "PRAGMA foreign_keys = ON; begin; INSERT INTO entry VALUES('$EN_DATE', '$RE_DATE', '$DEV_ID', (select max(seq) from entry) + 1); INSERT INTO motion VALUES($GX, $GY, $GZ, $AX, $AY, $AZ, $MX, $MY, $MZ, (select max(seq) from entry)); commit;" ; then
+if sqlite3 $DATABASE "PRAGMA foreign_keys = ON; begin; INSERT INTO entry VALUES('$EN_DATE', '$RL_DATE', '$DEV_ID', (select max(seq) from entry) + 1); INSERT INTO motion VALUES($GX, $GY, $GZ, $AX, $AY, $AZ, $MX, $MY, $MZ, (select max(seq) from entry)); commit;" ; then
     echo "s1"
-elif sqlite3 $DATABASE "PRAGMA foreign_keys = ON; begin; INSERT INTO entry VALUES('$EN_DATE', '$RE_DATE', '$DEV_ID', 0); INSERT INTO motion VALUES($GX, $GY, $GZ, $AX, $AY, $AZ, $MX, $MY, $MZ, (select max(seq) from entry)); commit;" ; then
+elif sqlite3 $DATABASE "PRAGMA foreign_keys = ON; begin; INSERT INTO entry VALUES('$EN_DATE', '$RL_DATE', '$DEV_ID', 0); INSERT INTO motion VALUES($GX, $GY, $GZ, $AX, $AY, $AZ, $MX, $MY, $MZ, (select max(seq) from entry)); commit;" ; then
     echo "s2"
 fi
 
