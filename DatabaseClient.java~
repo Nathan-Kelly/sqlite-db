@@ -16,12 +16,11 @@ public class DatabaseClient
 		BufferedReader myR = new BufferedReader(new InputStreamReader(System.in));
 		
 		// Get a connection to the address and socket
-		InetAddress grp = InetAddress.getByName("10.1.1.1");
-		MulticastSocket s = new MulticastSocket(61234);
+		InetAddress grp = InetAddress.getByName("130.217.227.3");
+		DatagramSocket s = new DatagramSocket(50050);		//TODO: Fix this to a standard
+		//s.connect(grp, 50050);
 		
-		// Join the group			
-		s.joinGroup(grp);
-		
+		System.
 		// Generate a thread to listen for incoming messages
 		ChatListen cl = new ChatListen(s, grp);
 		cl.start();
@@ -45,9 +44,9 @@ public class DatabaseClient
 */
 class ChatListen extends Thread
 {
-    private MulticastSocket s;
+    private DatagramSocket s;
     
-    public ChatListen(MulticastSocket s, InetAddress grp)
+    public ChatListen(DatagramSocket s, InetAddress grp)
     {
 	this.s = s;
     }
@@ -69,6 +68,12 @@ class ChatListen extends Thread
 			String time = str.substring(24, 35);
 			String data = str.substring(36);
 			
+			System.err.println(
+				"Device Id: " + deviceId +
+				"Type: " + type +
+				"Time: " + time +
+				"Data: " + data
+			);
 			table_operations.insert_motion_entry(deviceId, data, time);
 			
 			System.out.println(fromAddress.getHostAddress() + ": " + str);
