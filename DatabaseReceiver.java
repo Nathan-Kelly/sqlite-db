@@ -3,25 +3,30 @@ import java.net.*;
 import java.util.ArrayList;
 
 class DatabaseReceiver {
+    static boolean DEBUG = true;
+    static boolean DIAGNOSTIC = false;
     static int maxTries = -1;
     static int tries = 0;
 
-    static int last_packet_0x00 = -1;
-    static int last_packet_0x01 = -1;
-
-    static int missed_packets_0x00 = 0;
+    static int last_packet_0x00        = -1;
+    static int missed_packets_0x00     = 0;
     static int duplicated_packets_0x00 = 0;
-    static int out_of_order_0x00 = 0;
+    static int out_of_order_0x00       = 0;
+    static int total_packets_0x00      = 0;    
+    static ArrayList<String> seq_0x00  = new ArrayList<String>();
 
-    static int total_packets_0x00 = 0;
-    
-    static ArrayList<String> seq_0x00 = new ArrayList<String>();
-    static ArrayList<String> seq_0x01 = new ArrayList<String>();
+    static int last_packet_0x01        = -1;
+    static int missed_packets_0x01     = 0;
+    static int duplicated_packets_0x01 = 0;
+    static int out_of_order_0x01       = 0;
+    static int total_packets_0x01      = 0;    
+    static ArrayList<String> seq_0x01  = new ArrayList<String>();
     
     public static void main(String argv[]) throws Exception {
 	if(argv.length > 0) {
 	    try {
 		maxTries = Integer.parseInt(argv[0]);
+		DIAGNOSTIC = true;
 	    }
 	    catch (Exception e) {
 		System.err.println("arg 0 <- Integer or null, thanks!");
@@ -35,12 +40,25 @@ class DatabaseReceiver {
 	    tries++;
 	}
 
-	System.out.println("total tries/packets recieved: " + tries);
-	System.out.println("\nSummary for device 0x00:");
-	System.out.println("    last_packet:          " + last_packet_0x00);
-	System.out.println("    missed packets:       " + missed_packets_0x00);
-	System.out.println("    duplicate packets:    " + duplicated_packets_0x00);
-	System.out.println("    out of order packets: " + out_of_order_0x00);
+	try { Thread.sleep(1000); } catch (Exception e) {} //silently ignore thread timeout exception :^)
+
+	if(DIAGNOSTIC) {
+	    System.out.println("total tries/packets recieved: " + tries);
+	    System.out.println("\nSummary for device 0x00:");
+	    System.out.println("    last_packet:            " + last_packet_0x00);
+	    System.out.println("    missed packets:         " + missed_packets_0x00);
+	    System.out.println("    duplicate packets:      " + duplicated_packets_0x00);
+	    System.out.println("    out of order packets:   " + out_of_order_0x00);
+	    System.out.println("    total packets received: " + total_packets_0x00);
+
+	    System.out.println();
+	    System.out.println("\nSummary for device 0x01:");
+	    System.out.println("    last_packet:            " + last_packet_0x01);
+	    System.out.println("    missed packets:         " + missed_packets_0x01);
+	    System.out.println("    duplicate packets:      " + duplicated_packets_0x01);
+	    System.out.println("    out of order packets:   " + out_of_order_0x01);
+	    System.out.println("    total packets received: " + total_packets_0x01);
+	}
     }
 
     static class Pair{
@@ -65,8 +83,8 @@ class DatabaseReceiver {
 	}
 	
 	public void run() {
-	    System.err.print("_____RECV__________PORT:_");
-	    System.err.println(connectionSocket.getPort() + "___");
+	    if (DEBUG) System.err.print("_____RECV__________PORT:_");
+	    if (DEBUG) System.err.println(connectionSocket.getPort() + "___");
 	    try {
 		BufferedReader inFromClient =
 		    new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
@@ -74,7 +92,7 @@ class DatabaseReceiver {
 		clientSentence = inFromClient.readLine();
 	    }
 	    catch (Exception e) {
-		System.err.println("Could not create streamreader");
+		if (DEBUG) System.err.println("Could not create streamreader");
 		return;
 	    }
 	    
@@ -117,12 +135,39 @@ class DatabaseReceiver {
 			}
 
 		    }
+		    else if(dev_id.equals("0x01")) {
+			total_packets_0x01+=1;
+			if(seq_0x01.contains(seqnum)) {
+			    duplicated_packets_0x01++;
+			    //duplicate packet
+			}
+			else {
+			    seq_0x01.add(seqnum);
+			    //TODO: parse seq num as int
+			    int k = Integer.parseInt(seqnum);
+			    if(k < last_packet_0x01)
+				out_of_order_0x01++;
+			    else {
+				if (k -1 > last_packet_0x01) {
+				    if(last_packet_0x01 != -1) {
+					int dif = k - last_packet_0x01 - 1;
+					missed_packets_0x01 += dif;
+				    }
+				}
+				last_packet_0x01 = k;
+			    }
+			    			    
+			    //check if it's greater than the current greatest
+			    //no, -> out of order
+			}
+
+		    }
 		    table_operations.insert_lux_entry(split[1], split[2], split[4]);
-		    System.out.print("Success: ");
-		    System.out.println(clientSentence + "\n");
+		    if (DEBUG) System.out.print("Success: ");
+		    if (DEBUG) System.out.println(clientSentence + "\n");
 		}
 		catch (Exception e) {
-		    System.err.println("Wrong Format: " + clientSentence);
+		    if (DEBUG) System.err.println("Wrong Format: " + clientSentence);
 		}
 	    }
 	    else {
@@ -132,16 +177,16 @@ class DatabaseReceiver {
 							 split[6] + " " +  split[7] + " " + split[8] + " " +
 							 split[9] + " " +  split[10] + " " + split[11], 
 							 split[2]);
-		    System.out.print("Success: ");
-		    System.out.println(clientSentence);
+		    if (DEBUG) System.out.print("Success: ");
+		    if (DEBUG) System.out.println(clientSentence);
 		}
 		catch (Exception e) {
-		    System.err.println("Wrong Format: " + clientSentence);
+		    if (DEBUG) System.err.println("Wrong Format: " + clientSentence);
 		}
 	    }
 	    try {
 		connectionSocket.close();
-	    } catch (Exception e) {} //silently ignore here - not important	    
+	    } catch (Exception e) {} //silently ignore here - not important
 	}
     }
 }
