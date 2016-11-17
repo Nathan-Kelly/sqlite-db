@@ -25,6 +25,13 @@ public class table_operations {
 	}
     }
     
+    public static int insert_lux_entry(String dev_id, String val, String timestamp) throws Exception {
+	String st = "./Add_Lux.sh " + dbname + " " + dev_id + " " + timestamp + " " +val;
+	System.out.println(st);
+	int rev = run_command(st);
+	return rev;
+    }
+    
     public static int insert_motion_entry(String dev_id, String S, String date) throws Exception {
 	String st = "./Add_Motion.sh " + dbname + " " + dev_id + " " + date + " ";
 	st += S;
