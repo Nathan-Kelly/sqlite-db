@@ -25,9 +25,9 @@ public class table_operations {
 	}
     }
     
-    public static int insert_lux_entry(String dev_id, String val, String timestamp) throws Exception {
+    public static int insert_lux_entry(String dev_id, String val, String timestamp, boolean DEBUG) throws Exception {
 	String st = "./Add_Lux.sh " + dbname + " " + dev_id + " " + timestamp + " " +val;
-	System.out.println(st);
+	if(DEBUG) System.out.println(st);
 	int rev = run_command(st);
 	return rev;
     }

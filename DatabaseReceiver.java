@@ -22,27 +22,37 @@ class DatabaseReceiver {
     static int total_packets_0x01      = 0;    
     static ArrayList<String> seq_0x01  = new ArrayList<String>();
     
-    public static void main(String argv[]) throws Exception {
+    public static void main(String argv[]) {
 	if(argv.length > 0) {
 	    try {
 		maxTries = Integer.parseInt(argv[0]);
 		DIAGNOSTIC = true;
+		DEBUG = false;
 	    }
 	    catch (Exception e) {
 		System.err.println("arg 0 <- Integer or null, thanks!");
 	    }
 	}
-	ServerSocket welcomeSocket = new ServerSocket(65051);
-	
-	while(maxTries == -1 || tries < maxTries) {	    
-	    Socket connectionSocket = welcomeSocket.accept();
-	    (new Thread(new DatabaseRecv_thread(connectionSocket))).start();
-	    tries++;
+	try {
+	    ServerSocket welcomeSocket = new ServerSocket(65051);
+	    
+	    System.out.println("Started listening for connections...");
+	    while(maxTries == -1 || tries < maxTries) {	    
+		Socket connectionSocket = welcomeSocket.accept();
+		(new Thread(new DatabaseRecv_thread(connectionSocket))).start();
+		tries++;
+	    }
+	} catch (Exception e) {
+	    e.printStackTrace();
 	}
-
-	try { Thread.sleep(1000); } catch (Exception e) {} //silently ignore thread timeout exception :^)
-
+	try {
+	    if(DIAGNOSTIC) try { Thread.sleep(1000); } catch (Exception e) {} //silently ignore thread timeout exception :^)
+	} catch (Exception e) {//sleep silently 
+	}
 	if(DIAGNOSTIC) {
+	    System.out.println();
+	    System.out.println();
+
 	    System.out.println("total tries/packets recieved: " + tries);
 	    System.out.println("\nSummary for device 0x00:");
 	    System.out.println("    last_packet:            " + last_packet_0x00);
@@ -126,6 +136,12 @@ class DatabaseReceiver {
 					int dif = k - last_packet_0x00 - 1;
 					missed_packets_0x00 += dif;
 				    }
+				    else {
+					//Recieved first packet from devce 0x00
+					if(!DEBUG)
+					    System.err.println("Communication established with device " + dev_id);
+
+				    }
 				}
 				last_packet_0x00 = k;
 			    }
@@ -153,6 +169,12 @@ class DatabaseReceiver {
 					int dif = k - last_packet_0x01 - 1;
 					missed_packets_0x01 += dif;
 				    }
+				    else {
+					//Recieved first packet from devce 0x00
+					if(!DEBUG)
+					    System.err.println("Communication established with device " + dev_id);
+
+				    }
 				}
 				last_packet_0x01 = k;
 			    }
@@ -162,7 +184,7 @@ class DatabaseReceiver {
 			}
 
 		    }
-		    table_operations.insert_lux_entry(split[1], split[2], split[4]);
+		    table_operations.insert_lux_entry(split[1], split[2], split[4], DEBUG);
 		    if (DEBUG) System.out.print("Success: ");
 		    if (DEBUG) System.out.println(clientSentence + "\n");
 		}
