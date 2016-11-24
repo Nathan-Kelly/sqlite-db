@@ -1,9 +1,49 @@
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.concurrent.*;
+
+class concurrentDBWriteThread implements Runnable{
+    public ConcurrentLinkedQueue<String> clq;
+    public boolean term = false;
+    public concurrentDBWriteThread() {
+	clq = new ConcurrentLinkedQueue<String>();	
+    }
+    
+    public void run() {
+	while(!term || !clq.isEmpty()) {
+	    try { Thread.sleep(1); } catch (Exception e) {}
+	    if(!clq.isEmpty()) {
+		String cs = clq.peek();
+		String[] split = cs.split(" ");
+		int er = 0;
+		try {
+		    er = table_operations.insert_lux_entry(split[1], split[2], split[4], DatabaseReceiver.DEBUG);
+		    if (DatabaseReceiver.DEBUG) System.out.print("Success: ");
+		    if (DatabaseReceiver.DEBUG) System.out.println(cs + "\n");
+		    clq.poll();
+		}
+		catch (Exception e) {
+		    //System.err.println(e);
+		    if(e.getMessage().equals("non-zero exit: 2")) //erase any malformed entries - can occur when something starts up
+			clq.poll();
+		    else
+			System.err.println("Err: Database probably busy: " + e.getMessage()); 
+			
+		    //silently ignore - we can rety this later anyway
+		    //check if shit was malformed or what
+		}
+	    }
+	}
+    }
+}
+
 
 class DatabaseReceiver {
-    static boolean DEBUG = true;
+    public static concurrentDBWriteThread d;
+    public static Thread dbthread;
+    
+    public static boolean DEBUG = true;
     static boolean DIAGNOSTIC = false;
     static int maxTries = -1;
     static int tries = 0;
@@ -34,6 +74,9 @@ class DatabaseReceiver {
 	    }
 	}
 	try {
+	    d = new concurrentDBWriteThread();
+	    (dbthread = new Thread(d)).start();
+	    
 	    ServerSocket welcomeSocket = new ServerSocket(65051);
 	    
 	    System.out.println("Started listening for connections...");
@@ -68,6 +111,8 @@ class DatabaseReceiver {
 	    System.out.println("    duplicate packets:      " + duplicated_packets_0x01);
 	    System.out.println("    out of order packets:   " + out_of_order_0x01);
 	    System.out.println("    total packets received: " + total_packets_0x01);
+
+	    d.term = true;
 	}
     }
 
@@ -140,16 +185,16 @@ class DatabaseReceiver {
 					//Recieved first packet from devce 0x00
 					if(!DEBUG)
 					    System.err.println("Communication established with device " + dev_id);
-
+					
 				    }
 				}
 				last_packet_0x00 = k;
 			    }
-			    			    
+			    
 			    //check if it's greater than the current greatest
 			    //no, -> out of order
 			}
-
+			
 		    }
 		    else if(dev_id.equals("0x01")) {
 			total_packets_0x01+=1;
@@ -182,11 +227,9 @@ class DatabaseReceiver {
 			    //check if it's greater than the current greatest
 			    //no, -> out of order
 			}
-
 		    }
-		    table_operations.insert_lux_entry(split[1], split[2], split[4], DEBUG);
-		    if (DEBUG) System.out.print("Success: ");
-		    if (DEBUG) System.out.println(clientSentence + "\n");
+
+		    d.clq.add(clientSentence);		    
 		}
 		catch (Exception e) {
 		    if (DEBUG) System.err.println("Wrong Format: " + clientSentence);
