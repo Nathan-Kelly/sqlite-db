@@ -91,6 +91,14 @@ class ConnectManThread implements Runnable {
 		    run_command("wpa_cli -i wlan1 remove_network 0");
 		    run_command("wpa_cli -i wlan1 remove_network 1");
 		    run_command("wpa_cli -i wlan1 remove_network 2");
+		    run_command("wpa_cli -i wlan1 remove_network 3");
+		    run_command("wpa_cli -i wlan1 remove_network 4");
+		    run_command("wpa_cli -i wlan1 remove_network 5");
+		    run_command("wpa_cli -i wlan1 remove_network 6");
+		    run_command("wpa_cli -i wlan1 remove_network 7");
+		    run_command("wpa_cli -i wlan1 remove_network 8");
+		    run_command("wpa_cli -i wlan1 remove_network 9");
+		    run_command("wpa_cli -i wlan1 remove_network 10");
 		    run_command("wpa_cli -i wlan1 add_network");
 		    run_command("wpa_cli -i wlan1 set_network 0 ssid \\\"riot-waikato-072A\\\"");
 		    run_command("wpa_cli -i wlan1 set_network 0 psk \\\"riotwaikato\\\"");
