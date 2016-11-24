@@ -15,7 +15,7 @@ class concurrentDBWriteThread implements Runnable{
     
     public void run() {
 	while(!term || !clq.isEmpty()) {
-	    try { Thread.sleep(1); } catch (Exception e) {}
+	    try { Thread.sleep(10); } catch (Exception e) {}
 	    if(!clq.isEmpty()) {
 		System.err.println("dumping...");
 		timeout_prog--;
@@ -43,10 +43,11 @@ class concurrentDBWriteThread implements Runnable{
 		    timeout_prog = timeout_cap;
 		    if(DatabaseReceiver.cmt.connected) {
 			DatabaseReceiver.cmt.ready = true;
-			while(DatabaseReceiver.cmt.done) {
-			    try { Thread.sleep(1); } catch (Exception e) {}
+			while(!DatabaseReceiver.cmt.done) {
+			    try { Thread.sleep(10); } catch (Exception e) {}
 			}
 			DatabaseReceiver.cmt.done = false;
+			try { Thread.sleep(100); } catch (Exception e) {}
 		    }
 		}
 	    }
@@ -67,7 +68,7 @@ class ConnectManThread implements Runnable {
 	
 	System.err.println("thread init");
 	while(true) {
-	    done = false;
+	    //done = false;
 	    try{
 		System.err.println("loop start");
 		run_command("iwgetid -r");
@@ -124,14 +125,17 @@ class ConnectManThread implements Runnable {
 			//run_command("sqlite3 tester2.db \\\" select \\* from lux;\\\"");
 			//run_command("sqlite3 tester2.db \"PRAGMA journal_mode=WAL; select * from lux;\"");
 			try {
-			    run_command("sqlite3 tester2.db \"PRAGMA journal_mode=WAL; begin; select entry_date," +
-					"_dev_id, lux from lux inner join entry on lux._seq = entry.seq; delete from lux; delete from entry; commit;\"");
+			    run_command("sqlite3 /home/pi/sqlite-db/tester2.db \"PRAGMA journal_mode=WAL; begin; select real_date," +
+					"_dev_id, lux from lux inner join entry on lux._seq = entry.seq;  commit;\"");
+
 			    for(String s : ls)  {
 				System.out.println(s);
 				out.println(s);
-				out.flush();
+				out.flush();				
 			    }
-			    
+			    try { Thread.sleep(100); } catch (Exception e) {}
+			    run_command("sqlite3 /home/pi/sqlite-db/tester2.db \"PRAGMA journal_mode=WAL; begin; delete from lux; delete from entry; commit; \"");
+			    try { Thread.sleep(100); } catch (Exception e) {}
 			    try {conn.close(); } catch (Exception e) {System.out.println("Couldn't close socket...");} //silently ignore
 			} catch (Exception e) {  System.err.println("Could not read from database");  }			
 		    } catch (Exception e) { System.err.println("Could not open printwriter: "); e.printStackTrace(); }
@@ -216,8 +220,9 @@ class DatabaseReceiver {
 	    ServerSocket welcomeSocket = new ServerSocket(65051);
 	    
 	    System.out.println("Started listening for connections...");
-	    while(maxTries == -1 || tries < maxTries) {	    
+	    while(maxTries == -1 || tries < maxTries) {
 		Socket connectionSocket = welcomeSocket.accept();
+		System.err.println("caught conn");
 		(new Thread(new DatabaseRecv_thread(connectionSocket))).start();
 		tries++;
 	    }
@@ -274,6 +279,7 @@ class DatabaseReceiver {
 	}
 	
 	public void run() {
+	    System.err.println("rec");
 	    if (DEBUG) System.err.print("_____RECV__________PORT:_");
 	    if (DEBUG) System.err.println(connectionSocket.getPort() + "___");
 	    try {
