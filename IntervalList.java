@@ -21,7 +21,7 @@ public class IntervalList {
 
     ArrayList<IntervalList.Interval> list = new ArrayList<>();
 
-    public class Interval implements Comparable {
+    public class Interval implements Comparable<IntervalList.Interval> {
 
         int intervalStart;
         int intervalEnd;
@@ -102,8 +102,8 @@ public class IntervalList {
          * @return
          */
         @Override
-        public int compareTo(Object interval) {
-            return this.intervalStart - ((IntervalList.Interval)interval).intervalStart;
+        public int compareTo(IntervalList.Interval interval) {
+            return this.intervalStart - interval.intervalStart;
         }
     }
 
