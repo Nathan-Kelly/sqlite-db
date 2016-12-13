@@ -195,19 +195,8 @@ class DatabaseReceiver {
     static int maxTries = -1;
     static int tries = 0;
 
-    static int last_packet_0x00        = -1;
-    static int missed_packets_0x00     = 0;
-    static int duplicated_packets_0x00 = 0;
-    static int out_of_order_0x00       = 0;
-    static int total_packets_0x00      = 0;    
-    static ArrayList<String> seq_0x00  = new ArrayList<String>();
-
-    static int last_packet_0x01        = -1;
-    static int missed_packets_0x01     = 0;
-    static int duplicated_packets_0x01 = 0;
-    static int out_of_order_0x01       = 0;
-    static int total_packets_0x01      = 0;    
-    static ArrayList<String> seq_0x01  = new ArrayList<String>();
+    // packet statistics
+    static ClientStatistics stats = new ClientStatistics();
     
     public static void main(String argv[]) {
 	if(argv.length > 0) {
@@ -242,24 +231,8 @@ class DatabaseReceiver {
 	} catch (Exception e) {//sleep silently 
 	}
 	if(DIAGNOSTIC) {
-	    System.out.println();
-	    System.out.println();
 
-	    System.out.println("total tries/packets recieved: " + tries);
-	    System.out.println("\nSummary for device 0x00:");
-	    System.out.println("    last_packet:            " + last_packet_0x00);
-	    System.out.println("    missed packets:         " + missed_packets_0x00);
-	    System.out.println("    duplicate packets:      " + duplicated_packets_0x00);
-	    System.out.println("    out of order packets:   " + out_of_order_0x00);
-	    System.out.println("    total packets received: " + total_packets_0x00);
-
-	    System.out.println();
-	    System.out.println("\nSummary for device 0x01:");
-	    System.out.println("    last_packet:            " + last_packet_0x01);
-	    System.out.println("    missed packets:         " + missed_packets_0x01);
-	    System.out.println("    duplicate packets:      " + duplicated_packets_0x01);
-	    System.out.println("    out of order packets:   " + out_of_order_0x01);
-	    System.out.println("    total packets received: " + total_packets_0x01);
+            stats.printStatistics();
 
 	    d.term = true;
 	}
@@ -295,6 +268,7 @@ class DatabaseReceiver {
 		    new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
 		DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
 		clientSentence = inFromClient.readLine();
+		System.out.println("Received: " + clientSentence);
 	    }
 	    catch (Exception e) {
 		if (DEBUG) System.err.println("Could not create streamreader");
@@ -304,81 +278,15 @@ class DatabaseReceiver {
 	    String[] split = clientSentence.split(" ");
 	    if(split[0].equals("lux")) {
 		try {
-		    //packet structure: LUX, ID, Val, Seq, Timestamp
-		    //todo: use seq number for metrics
-		    //todo: put this part in a thread, too
-		    
-		    //ID, VAL, Timestamp
+		    //packet structure: lux <device_id> <value> <timestamp> <seq_number>
 		    String dev_id = split[1];
 		    String val = split[2];
 		    String Timestamp = split[4];
 		    String seqnum = split[3];
-		    if(dev_id.equals("0x00")) {
-			total_packets_0x00+=1;
-			if(seq_0x00.contains(seqnum)) {
-			    duplicated_packets_0x00++;
-			    //duplicate packet
-			}
-			else {
-			    seq_0x00.add(seqnum);
-			    //TODO: parse seq num as int
-			    int k = Integer.parseInt(seqnum);
-			    if(k < last_packet_0x00)
-				out_of_order_0x00++;
-			    else {
-				if (k -1 > last_packet_0x00) {
-				    if(last_packet_0x00 != -1) {
-					int dif = k - last_packet_0x00 - 1;
-					missed_packets_0x00 += dif;
-				    }
-				    else {
-					//Recieved first packet from devce 0x00
-					if(!DEBUG)
-					    System.err.println("Communication established with device " + dev_id);
-					
-				    }
-				}
-				last_packet_0x00 = k;
-			    }
-			    
-			    //check if it's greater than the current greatest
-			    //no, -> out of order
-			}
-			
-		    }
-		    else if(dev_id.equals("0x01")) {
-			total_packets_0x01+=1;
-			if(seq_0x01.contains(seqnum)) {
-			    duplicated_packets_0x01++;
-			    //duplicate packet
-			}
-			else {
-			    seq_0x01.add(seqnum);
-			    //TODO: parse seq num as int
-			    int k = Integer.parseInt(seqnum);
-			    if(k < last_packet_0x01)
-				out_of_order_0x01++;
-			    else {
-				if (k -1 > last_packet_0x01) {
-				    if(last_packet_0x01 != -1) {
-					int dif = k - last_packet_0x01 - 1;
-					missed_packets_0x01 += dif;
-				    }
-				    else {
-					//Recieved first packet from devce 0x00
-					if(!DEBUG)
-					    System.err.println("Communication established with device " + dev_id);
 
-				    }
-				}
-				last_packet_0x01 = k;
-			    }
-			    			    
-			    //check if it's greater than the current greatest
-			    //no, -> out of order
-			}
-		    }
+                    stats.recordPacketStats(dev_id, Integer.parseInt(seqnum));
 
+                    stats.printStatistics();
 		    d.clq.add(clientSentence);		    
 		}
 		catch (Exception e) {

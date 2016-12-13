@@ -11,7 +11,8 @@ CLASSES = \
 	HeadScanner.java \
 	IntervalList.java \
 	table_operations.java \
-	WindowedSequenceList.java
+	WindowedSequenceList.java \
+	TestClient.java
 
 default: classes
 
